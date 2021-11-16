@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { register } from "../../api/WebAPI";
-
-import { Link } from "react-router-dom";
+import { register, setRegisterError } from "../../redux/reducers/userReducer";
+import { useDispatch, useSelector } from "react-redux";
+import { useHistory, Link } from "react-router-dom";
+import Loading from "../../components/Loading";
+import { MEDIA_QUERY_M } from "../../constants/breakpoint";
 
 const Banner = styled.div`
   position: relative;
@@ -40,7 +42,7 @@ const Content = styled.form`
   color: #5d5d5d;
   background-color: #faf7f3;
 
-  @media all and (max-width: 600px) {
+  ${MEDIA_QUERY_M} {
     width: 100%;
   }
 `;
@@ -57,7 +59,7 @@ const RegisterContent = styled.form`
     margin: 6px;
   }
 
-  @media all and (max-width: 600px) {
+  ${MEDIA_QUERY_M} {
     width: 100%;
   }
 `;
@@ -85,10 +87,6 @@ const ErrorMessage = styled.p`
   color: #ff0000;
 `;
 
-const SuccessMessage = styled.p`
-  color: #1b9e1b;
-`;
-
 const LoginRegisterTab = styled.div`
   display: flex;
   justify-content: space-between;
@@ -106,29 +104,38 @@ const LoginTab = styled(RegisterTab)`
 `;
 
 export default function RegisterPage() {
-  const [nickname, setNickname] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState();
-  const [successMessage, setSuccessMessage] = useState();
+  const dispatch = useDispatch();
+  const history = useHistory();
+  const [formData, setFormData] = useState({
+    username: "",
+    nickname: "",
+    password: "",
+  });
+  const { username, nickname, password } = formData;
+  const isLoading = useSelector((store) => store.user.isLoading);
+  const errorMessage = useSelector((store) => store.user.registerError);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    register(nickname, username, password).then((data) => {
-      if (data.ok !== 1) {
-        setErrorMessage(data.message);
-        setSuccessMessage(null);
-      }
-      if (data.ok === 1) {
-        setErrorMessage(null);
-        setSuccessMessage("註冊成功！請直接登入。");
-      }
+  const updateFormData = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
     });
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    dispatch(register(history, formData));
+  };
+
+  useEffect(() => {
+    return () => {
+      dispatch(setRegisterError(null));
+    };
+  }, [dispatch]);
+
   return (
     <>
+      {isLoading && <Loading>Loading...</Loading>}
       <Banner>
         <Title>Register</Title>
       </Banner>
@@ -141,26 +148,30 @@ export default function RegisterPage() {
       <RegisterContent onSubmit={handleSubmit}>
         <RegisterText>Nickname</RegisterText>
         <RegisterInput
+          name="nickname"
           value={nickname}
+          type="text"
           placeholder="nickname"
-          onChange={(e) => setNickname(e.target.value)}
+          onChange={(e) => updateFormData(e)}
         />
         <RegisterText>Username</RegisterText>
         <RegisterInput
+          name="username"
           value={username}
+          type="text"
           placeholder="username"
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => updateFormData(e)}
         />
         <RegisterText>Password</RegisterText>
         <RegisterInput
+          name="password"
           value={password}
           type="password"
           placeholder="password"
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => updateFormData(e)}
         />
         <RegisterButton>Register</RegisterButton>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-        {successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
       </RegisterContent>
     </>
   );

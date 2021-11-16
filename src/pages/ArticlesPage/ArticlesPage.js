@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import { getArticles, getAllArticles } from "../../api/WebAPI";
+import {
+  getArticles,
+  getTotalArticles,
+} from "../../redux/reducers/articleReducer";
+import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
+import { MEDIA_QUERY_L } from "../../constants/breakpoint";
+import Loading from "../../components/Loading";
 
 const Banner = styled.div`
   position: relative;
@@ -39,7 +45,7 @@ const ArticleList = styled.div`
   flex-direction: column;
   flex-wrap: wrap;
 
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     flex-direction: column;
   }
 `;
@@ -64,7 +70,7 @@ const ArticleContainer = styled(Link)`
       rgb(165 160 160 / 68%)
     );
   }
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     flex-direction: column;
   }
 `;
@@ -89,7 +95,7 @@ const ArticleImg = styled.div`
     );
   }
 
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     width: 100%;
   }
 `;
@@ -115,7 +121,7 @@ const ArticleInfo = styled.div`
   padding: 16px 20px;
   background: #faf7f3;
 
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     width: 100%;
     padding-top: 16px;
   }
@@ -179,59 +185,51 @@ const Article = ({ title, time, id, body, nickname }) => {
 };
 
 export default function HomePage() {
-  const [articles, setArticles] = useState([]);
-  const [articlesError, setArticlesError] = useState(null);
+  const dispatch = useDispatch();
+  const articles = useSelector((store) => store.article.articles);
+  const articlesError = useSelector((store) => store.article.articlesError);
+  const totalArticles = useSelector((store) => store.article.totalArticles);
+  const isLoading = useSelector((store) => store.article.isLoadingArticles);
+
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
+  const totalPages = Math.ceil((totalArticles - 1) / 9);
 
   useEffect(() => {
-    getArticles(page)
-      .then((data) => {
-        setArticles(data);
-      })
-      .catch((err) => {
-        setArticlesError(err.message);
-      });
-    getAllArticles()
-      .then((data) => {
-        setTotalPages(Math.ceil((data.length - 1) / 9));
-      })
-      .catch((err) => {
-        setArticlesError(err.message);
-      });
-  }, [page, totalPages]);
+    dispatch(getArticles(page));
+    dispatch(getTotalArticles());
+  }, [dispatch, page]);
+
+  useEffect(() => {
+    window.scroll(0, 0);
+  }, [page]);
 
   const handlePrevBtnClick = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-    window.scroll(0, 0);
+    if (page > 1) setPage(page - 1);
   };
 
   const handleNextBtnClick = () => {
-    if (page < totalPages) {
-      setPage(page + 1);
-    }
-    window.scroll(0, 0);
+    if (page < totalPages) setPage(page + 1);
   };
 
   return (
     <>
+      {isLoading && <Loading>Loading...</Loading>}
       <Banner>
         <Title>All Articles</Title>
       </Banner>
       {articlesError && <Error>{articlesError.toString()}</Error>}
       <ArticleList>
-        {articles.map((article) => (
-          <Article
-            key={article.id}
-            title={article.title}
-            body={article.body}
-            nickname={article.user.nickname}
-            time={new Date(article.createdAt).toLocaleDateString()}
-            id={article.id}
-          />
-        ))}
+        {articles &&
+          articles.map((article) => (
+            <Article
+              key={article.id}
+              title={article.title}
+              body={article.body}
+              nickname={article.user.nickname}
+              time={new Date(article.createdAt).toLocaleDateString()}
+              id={article.id}
+            />
+          ))}
       </ArticleList>
       <Pagination>
         {!(page === 1) && (

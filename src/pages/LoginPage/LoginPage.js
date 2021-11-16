@@ -1,9 +1,10 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { login, getMe } from "../../api/WebAPI";
-import { setAuthToken } from "../../utils";
-import { AuthContext } from "../../contexts";
+import { login, setLoginError } from "../../redux/reducers/userReducer";
 import { useHistory, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import Loading from "../../components/Loading";
+import { MEDIA_QUERY_M } from "../../constants/breakpoint";
 
 const Banner = styled.div`
   position: relative;
@@ -41,7 +42,7 @@ const Content = styled.form`
   color: #5d5d5d;
   background-color: #faf7f3;
 
-  @media all and (max-width: 600px) {
+  ${MEDIA_QUERY_M} {
     width: 100%;
   }
 `;
@@ -58,7 +59,7 @@ const LoginContent = styled.form`
     margin: 6px;
   }
 
-  @media all and (max-width: 600px) {
+  ${MEDIA_QUERY_M} {
     width: 100%;
   }
 `;
@@ -103,34 +104,36 @@ const RegisterTab = styled(LoginTab)`
 `;
 
 export default function LoginPage() {
-  const { setUser } = useContext(AuthContext);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState();
+  const dispatch = useDispatch();
   const history = useHistory();
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    login(username, password).then((data) => {
-      if (data.ok === 0) {
-        return setErrorMessage(data.message);
-      }
-      setAuthToken(data.token);
-
-      getMe().then((response) => {
-        if (response.ok !== 1) {
-          setAuthToken(null);
-          return setErrorMessage(response.toString());
-        }
-        setUser(response.data);
-        history.push("/");
-      });
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
+  const { username, password } = formData;
+  const isLoading = useSelector((store) => store.user.isLoading);
+  const errorMessage = useSelector((store) => store.user.loginError);
+  const updateFormData = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
     });
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    dispatch(login(history, formData));
+  };
+
+  useEffect(() => {
+    return () => {
+      dispatch(setLoginError(null));
+    };
+  }, [dispatch]);
+
   return (
     <>
+      {isLoading && <Loading>Loading...</Loading>}
       <Banner>
         <Title>LOGIN</Title>
       </Banner>
@@ -143,16 +146,18 @@ export default function LoginPage() {
       <LoginContent onSubmit={handleSubmit}>
         <LoginText>Username</LoginText>
         <LoginInput
+          name="username"
           value={username}
           placeholder="username"
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => updateFormData(e)}
         />
         <LoginText>Password</LoginText>
         <LoginInput
+          name="password"
           value={password}
           type="password"
           placeholder="password"
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => updateFormData(e)}
         />
         <LoginButton>LOGIN</LoginButton>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}

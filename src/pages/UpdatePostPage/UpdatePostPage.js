@@ -1,11 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import {
-  createNewArticle,
-  setArticleError,
-} from "../../redux/reducers/articleReducer";
+import { updateArticle, getArticle } from "../../redux/reducers/articleReducer";
 import { useDispatch, useSelector } from "react-redux";
-import { useHistory } from "react-router-dom";
+import { useParams, useHistory } from "react-router-dom";
 import MDEditor from "@uiw/react-md-editor";
 import Loading from "../../components/Loading";
 
@@ -75,12 +72,14 @@ const ErrorMessage = styled.p`
 `;
 
 export default function NewPostPage() {
+  const { id } = useParams();
   const dispatch = useDispatch();
   const history = useHistory();
   const [title, setTitle] = useState("");
   const [post, setPost] = useState("");
 
   const user = useSelector((store) => store.user.user);
+  const article = useSelector((store) => store.article.article);
   const isLoading = useSelector((store) => store.article.isLoadingArticle);
   const errorMessage = useSelector((store) => store.article.articleError);
 
@@ -90,29 +89,29 @@ export default function NewPostPage() {
       title,
       body: post,
     };
-    dispatch(createNewArticle(history, payload));
+    dispatch(updateArticle(history, id, payload));
   };
 
-  const handleTitleText = (e) => {
-    setTitle(e.target.value);
-    dispatch(setArticleError(""));
-  };
+  useEffect(() => {
+    dispatch(getArticle(id));
+  }, [dispatch, id]);
 
-  const handlePostText = (e) => {
-    setPost(e);
-    dispatch(setArticleError(""));
-  };
+  useEffect(() => {
+    if (article) {
+      setTitle(article[0].title);
+      setPost(article[0].body);
+    }
+  }, [setTitle, setPost, article]);
 
   if (!user) {
     alert("請先登入！");
     history.push("/login");
   }
-
   return (
     <>
       {isLoading && <Loading>Loading...</Loading>}
       <Banner>
-        <Title>New Post</Title>
+        <Title>Edit Post</Title>
       </Banner>
       <PostContent onSubmit={handleSubmit}>
         <PostText>Title</PostText>
@@ -121,7 +120,7 @@ export default function NewPostPage() {
           value={title}
           type="text"
           placeholder="Title"
-          onChange={(e) => handleTitleText(e)}
+          onChange={(e) => setTitle(e.target.value)}
         />
         <PostText>Post</PostText>
         <MDEditor
@@ -129,7 +128,7 @@ export default function NewPostPage() {
           value={post}
           type="text"
           placeholder="post"
-          onChange={(e) => handlePostText(e)}
+          onChange={setPost}
         />
         <MDEditor.Markdown
           source={post}

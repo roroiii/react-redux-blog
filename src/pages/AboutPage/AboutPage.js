@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { MEDIA_QUERY_M } from "../../constants/breakpoint";
 
 const Banner = styled.div`
   position: relative;
@@ -41,7 +42,7 @@ const AboutText = styled.div`
     margin-bottom: 12px;
   }
 
-  @media all and (max-width: 600px) {
+  ${MEDIA_QUERY_M} {
     width: 100%;
   }
 `;

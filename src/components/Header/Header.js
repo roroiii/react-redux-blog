@@ -1,8 +1,8 @@
-import { useContext } from "react";
 import styled from "styled-components";
 import { useHistory, Link, useLocation } from "react-router-dom";
-import { AuthContext } from "../../contexts";
-import { setAuthToken } from "../../utils";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../../redux/reducers/userReducer";
+import { MEDIA_QUERY_S, MEDIA_QUERY_L } from "../../constants/breakpoint";
 
 const HeaderContainer = styled.div`
   display: flex;
@@ -19,13 +19,13 @@ const HeaderContainer = styled.div`
   font-weight: 600;
   z-index: 5;
 
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     height: 100px;
     flex-wrap: wrap;
     text-align: center;
   }
 
-  @media all and (max-width: 325px) {
+  ${MEDIA_QUERY_S} {
     height: auto;
   }
 `;
@@ -35,13 +35,13 @@ const Brand = styled.div`
   font-size: 24px;
   margin: 0 12px;
 
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     order: -1;
     width: 100%;
     margin: 12px 0 0;
   }
 
-  @media all and (max-width: 325px) {
+  ${MEDIA_QUERY_S} {
     font-size: 20px;
   }
 `;
@@ -50,10 +50,10 @@ const NavbarList = styled.div`
   flex-direction: row;
   height: 64px;
 
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     width: 50%;
   }
-  @media all and (max-width: 325px) {
+  ${MEDIA_QUERY_S} {
     width: 100%;
     height: 44px;
     justify-content: center;
@@ -86,7 +86,7 @@ const Nav = styled(Link)`
       border-bottom: 5px solid #f35f70;
     }
   `};
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     font-size: 14px;
   }
 `;
@@ -94,14 +94,11 @@ const Nav = styled(Link)`
 export default function Header() {
   const location = useLocation();
   const history = useHistory();
-  const { user, setUser } = useContext(AuthContext);
+  const dispatch = useDispatch();
+  const user = useSelector((store) => store.user.user);
 
   const handleLogout = () => {
-    setAuthToken("");
-    setUser(null);
-    if (location.pathname !== "/") {
-      history.push("/");
-    }
+    dispatch(logout(history));
   };
 
   return (

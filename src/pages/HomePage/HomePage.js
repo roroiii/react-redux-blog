@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import background from "../../background.jpeg";
 import { Link } from "react-router-dom";
-import { getArticles } from "../../api/WebAPI";
 import PropTypes from "prop-types";
+import { getArticles } from "../../redux/reducers/articleReducer";
+import { useDispatch, useSelector } from "react-redux";
+import { MEDIA_QUERY_L } from "../../constants/breakpoint";
+import Loading from "../../components/Loading";
 
 const Banner = styled.div`
   position: relative;
@@ -46,7 +49,7 @@ const ArticleList = styled.div`
   justify-content: center;
   flex-wrap: wrap;
 
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     flex-direction: column;
   }
 `;
@@ -72,7 +75,7 @@ const ArticleContainer = styled.div`
     );
   }
 
-  @media all and (max-width: 768px) {
+  ${MEDIA_QUERY_L} {
     width: 100%;
   }
 `;
@@ -121,35 +124,33 @@ const Article = ({ title, time, id }) => {
 };
 
 export default function HomePage() {
-  const [articles, setArticles] = useState([]);
-  const [articlesError, setArticlesError] = useState(null);
+  const dispatch = useDispatch();
+  const articles = useSelector((store) => store.article.articles);
+  const articlesError = useSelector((store) => store.article.articlesError);
+  const isLoading = useSelector((store) => store.article.isLoadingArticles);
 
   useEffect(() => {
-    getArticles()
-      .then((data) => {
-        setArticles(data);
-      })
-      .catch((err) => {
-        setArticlesError(err.message);
-      });
-  }, []);
+    dispatch(getArticles(1));
+  }, [dispatch]);
 
   return (
     <>
+      {isLoading && <Loading>Loading...</Loading>}
       <Banner>
         <Title>We Are Taste of Summer</Title>
       </Banner>
       <SubTitle>LATEST STORIES</SubTitle>
       {articlesError && <Error>{articlesError.toString()}</Error>}
       <ArticleList>
-        {articles.map((article) => (
-          <Article
-            key={article.id}
-            title={article.title}
-            time={new Date(article.createdAt).toLocaleDateString()}
-            id={article.id}
-          />
-        ))}
+        {articles &&
+          articles.map((article) => (
+            <Article
+              key={article.id}
+              title={article.title}
+              time={new Date(article.createdAt).toLocaleDateString()}
+              id={article.id}
+            />
+          ))}
       </ArticleList>
     </>
   );
